@@ -150,7 +150,11 @@ function addMark() {
 }
 
 function getTitle() {
-  echo "$menu" | python "$HOME/.local/bin/title_fetcher.py"
+  if [ -f "./title_fetcher.py" ]; then
+    echo "$menu" | python "./title_fetcher.py"
+  else
+    echo "No Description Available"
+  fi
 }
 
 function addTags() {
