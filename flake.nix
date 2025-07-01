@@ -19,7 +19,7 @@
       ]);
       bmm-rofi = pkgs.stdenv.mkDerivation {
         name = "bmm-rofi";
-        src = ./src;;
+        src = ./src;
         nativeBuildInputs = [pkgs.makeWrapper pythonWithPackages];
         installPhase = ''
           mkdir -p $out/bin
