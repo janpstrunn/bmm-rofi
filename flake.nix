@@ -30,7 +30,7 @@
         '';
         meta = {
           description = "bmm-rofi";
-          homepage = "https://codeberg.org/janpstrunn/bmm-rofi";
+          homepage = "https://github.com/janpstrunn/bmm-rofi";
           license = pkgs.lib.licenses.mit;
         };
       };
