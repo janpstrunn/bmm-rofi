@@ -153,7 +153,7 @@ function getTitle() {
   if [ -f "./title_fetcher.py" ]; then
     echo "$menu" | python "./title_fetcher.py"
   else
-    echo "No Description Available"
+    echo "No title available"
   fi
 }
 

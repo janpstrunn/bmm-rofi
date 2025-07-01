@@ -9,7 +9,7 @@ def fetch_title(url):
 
         soup = BeautifulSoup(response.text, 'html.parser')
 
-        title = soup.title.string if soup.title else "No title found"
+        title = soup.title.string if soup.title else "No title available"
 
         return title
     except requests.RequestException as e:
