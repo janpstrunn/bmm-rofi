@@ -1,0 +1,169 @@
+#!/usr/bin/env bash
+
+function _rofi() {
+  rofi -dmenu -i -no-levenshtein-sort -width 1000 "$@"
+}
+
+switch_view="Ctrl+t"
+new_bookmark="Ctrl+z"
+edit="Ctrl+y"
+delete="Ctrl+x"
+
+help_color="#7c5cff"
+div_color="#334433"
+label="#f067fc"
+
+function bmm_command() {
+  local tag=$1
+  if [ -n "$tag" ]; then
+    if [ "$tag" == "SHOW ALL" ]; then
+      bmm list
+    else
+      bmm list -t "$tag"
+    fi
+  else
+    bmm list
+  fi
+}
+
+function main() {
+  local tag=$1 val
+  HELP="<span color='${label}'>Modes: </span><span color='${help_color}'>${switch_view}</span>: Tag Mode <span color='${div_color}'>|</span> <span color='${help_color}'>${edit}</span>: Edit Mode
+<span color='${label}'>Actions: </span><span color='${help_color}'>${new_bookmark}</span>: New Bookmark <span color='${div_color}'>|</span> <span color='${help_color}'>${delete}</span>: Delete"
+  if [[ $mode == "bookmarks" ]]; then
+    content=$(bmm_command "$tag")
+    menu=$(echo "${content}" | _rofi -p 'Bookmark Mode' -mesg "${HELP}" -kb-custom-1 "${new_bookmark}" -kb-custom-2 "${switch_view}" -kb-custom-4 "${edit}" -kb-custom-5 "${delete}")
+  elif [[ $mode == "tags" ]]; then
+    tags="SHOW ALL\n"
+    tags+=$(bmm tags list)
+    menu=$(echo -e "${tags}" | _rofi -p 'Tag Mode' -mesg "${HELP}" -kb-custom-1 "${new_bookmark}" -kb-custom-2 "${switch_view}" -kb-custom-4 "${edit}" -kb-custom-5 "${delete}")
+  fi
+  val=$?
+  if [[ $val -eq 1 ]]; then
+    exit
+  elif [[ $val -eq 10 ]]; then
+    addMark
+  elif [[ $val -eq 14 ]]; then
+    deleteMenu
+  elif [[ $val -eq 13 ]]; then
+    editMenu
+  elif [[ $val -eq 11 ]]; then
+    if [[ $mode == "bookmarks" ]]; then
+      mode=tags main
+    elif [[ $mode == "tags" ]]; then
+      mode=bookmarks main
+    fi
+  elif [[ $val -eq 0 ]]; then
+    if [[ $mode == "bookmarks" ]]; then
+      xdg-open "$menu"
+    elif [[ $mode == "tags" ]]; then
+      mode=bookmarks main "$menu"
+    fi
+  fi
+}
+
+function deleteMenu() {
+  local confirmation
+  getBookmarkMetadata
+  confirmation=$(echo -e "Yes\nNo" | _rofi -mesg "Are you sure you want to delete: <span color='${help_color}'>$title?</span>" -p '> ')
+  if [ "$confirmation" == "Yes" ]; then
+    bmm delete -y "$menu"
+    notify-send "Bookmark: Delete" "Deleted $title"
+  else
+    notify-send "Bookmark: Delete" "Delete canceled"
+  fi
+  mode=bookmarks main
+}
+
+function getBookmarkMetadata() {
+  local content
+  content=$(bmm show "$menu")
+  title="$(echo "$content" | sed -n 's/^Title://p')"
+  bookmark="$(echo "$content" | sed -n 's/^URI  ://p')"
+  tags="$(echo "$content" | sed -n 's/^Tags ://p')"
+}
+
+function editMenu() {
+  local content editmenu val
+  getBookmarkMetadata
+  content=$(echo -e "Bookmark: $bookmark\n1. title: $title\n2. tags: $tags")
+  editmenu=$(echo -e "< Return\n---\n${content}" | _rofi -p '> ')
+  val=$?
+  if [[ $val -eq 1 ]]; then
+    exit
+  elif [[ $val -eq 0 ]]; then
+    if [[ $editmenu == "< Return" ]]; then
+      main
+    elif [[ $editmenu == "tags: NOTAG" ]]; then
+      addTags --update
+    elif [[ $editmenu =~ tags:* ]]; then
+      tags="${tags}" editTags
+    elif [[ $editmenu =~ title:* ]]; then
+      editTitle
+    fi
+  fi
+}
+
+function editTags() {
+  local edittagsmenu val
+  getBookmarkMetadata
+  edittagsmenu=$(echo "$tags" | _rofi -p '> ' -mesg "Edit Tags and hit Enter")
+  val=$?
+  if [[ $val -eq 1 ]]; then
+    exit
+  elif [[ $val -eq 0 ]]; then
+    bmm save -t "$edittagsmenu" "$menu"
+  fi
+  mode=bookmarks main
+}
+
+function editTitle() {
+  local titlemenu val
+  titlemenu=$(echo "" | _rofi -p "> " -filter "${title}" -mesg "Edit Title and hit Enter")
+  val=$?
+  if [[ $val -eq 1 ]]; then
+    exit
+  elif [[ $val -eq 0 ]]; then
+    bmm save --title "$titlemenu" "$menu"
+  fi
+  mode=bookmarks main
+}
+
+function accessClipboard() {
+  clipmethod="$XDG_SESSION_TYPE"
+  if [ "$clipmethod" = "x11" ]; then
+    xclip -o
+  elif [ "$clipmethod" = "wayland" ]; then
+    wl-paste
+  fi
+}
+
+function addMark() {
+  local inserturl val
+  inserturl=$(echo -e "$(accessClipboard)" | _rofi -p '> ' -mesg "Use URL below or type manually")
+  val=$?
+  if [[ $val -eq 1 ]]; then
+    exit
+  elif [[ $val -eq 0 ]]; then
+    addTags "$inserturl"
+  fi
+}
+
+function getTitle() {
+  echo "$menu" | python "$HOME/.local/bin/title_fetcher.py"
+}
+
+function addTags() {
+  local url inserttags val title
+  title=$(getTitle)
+  url=${1:-$menu}
+  inserttags=$(bmm tags list | _rofi -p '> ' -mesg "Separate tags with ', '")
+  val=$?
+  if [[ $val -eq 1 ]]; then
+    exit
+  elif [[ $val -eq 0 ]]; then
+    bmm save -t "${inserttags}" --title "$title" "$url"
+  fi
+}
+
+mode=bookmarks main
