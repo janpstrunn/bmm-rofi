@@ -27,8 +27,9 @@ mv src/bmm-rofi "$HOME/.local/bin"
 
 Note: You still need to compile `bmm` from source first.
 
-````bash
-nix run github:janpstrunn/bmm-rofi ```
+```bash
+nix run github:janpstrunn/bmm-rofi
+```
 
 ## Notes
 
@@ -37,4 +38,3 @@ This script has been only tested in a Linux Machine.
 ## License
 
 This repository is licensed under the MIT License, a very permissive license that allows you to use, modify, copy, distribute and more.
-````
