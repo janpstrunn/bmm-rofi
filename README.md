@@ -25,8 +25,6 @@ mv src/bmm-rofi "$HOME/.local/bin"
 
 ### Using Nix
 
-Note: You still need to compile `bmm` from source first.
-
 ```bash
 nix run github:janpstrunn/bmm-rofi
 ```

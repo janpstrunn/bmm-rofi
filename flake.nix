@@ -17,16 +17,33 @@
         ps.requests
         ps.beautifulsoup4
       ]);
+      rustPlatform = pkgs.rustPlatform;
+      bmm = rustPlatform.buildRustPackage {
+        pname = "bmm";
+        version = "0.3.0";
+        src = pkgs.fetchFromGitHub {
+          owner = "dhth";
+          repo = "bmm";
+          rev = "v0.3.0";
+          hash = "sha256-sfAUvvZ/LKOXfnA0PB3LRbPHYoA+FJV4frYU+BpC6WI=";
+        };
+        cargoLock = {
+          lockFile = pkgs.fetchurl {
+            url = "https://raw.githubusercontent.com/dhth/bmm/refs/heads/main/Cargo.lock";
+            hash = "sha256-DiNwacz6AZnS0QO3EUHK8tzBCO+zwyDWrwrbp2r3UEA=";
+          };
+        };
+      };
       bmm-rofi = pkgs.stdenv.mkDerivation {
         name = "bmm-rofi";
         src = ./src;
-        nativeBuildInputs = [pkgs.makeWrapper pythonWithPackages];
+        nativeBuildInputs = [pkgs.makeWrapper pythonWithPackages bmm];
         installPhase = ''
           mkdir -p $out/bin
           cp bmm-rofi $out/bin/bmm-rofi
           chmod +x $out/bin/bmm-rofi
           wrapProgram "$out/bin/bmm-rofi" \
-            --prefix PATH : "${pkgs.lib.makeBinPath [pythonWithPackages]}"
+            --prefix PATH : "${pkgs.lib.makeBinPath [pythonWithPackages bmm]}"
         '';
         meta = {
           description = "bmm-rofi";
