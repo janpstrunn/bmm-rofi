@@ -37,13 +37,18 @@
       bmm-rofi = pkgs.stdenv.mkDerivation {
         name = "bmm-rofi";
         src = ./src;
-        nativeBuildInputs = [pkgs.makeWrapper pythonWithPackages bmm];
+        nativeBuildInputs = [
+          bmm
+          pkgs.makeWrapper
+          pkgs.rofi
+          pythonWithPackages
+        ];
         installPhase = ''
           mkdir -p $out/bin
           cp bmm-rofi $out/bin/bmm-rofi
           chmod +x $out/bin/bmm-rofi
           wrapProgram "$out/bin/bmm-rofi" \
-            --prefix PATH : "${pkgs.lib.makeBinPath [pythonWithPackages bmm]}"
+            --prefix PATH : "${pkgs.lib.makeBinPath [pythonWithPackages bmm pkgs.rofi]}"
         '';
         meta = {
           description = "bmm-rofi";
